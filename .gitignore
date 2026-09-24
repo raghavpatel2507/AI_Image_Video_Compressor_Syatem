@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+
+sample_data/*.jpg
+sample_data/*.mp4
+sample_data/training_samples/
+outputs/
+
+.DS_Store
+.venv/
+venv/
+Images
+videos

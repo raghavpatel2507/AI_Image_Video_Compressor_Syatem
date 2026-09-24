@@ -1,0 +1,28 @@
+
+numpy>=1.26
+pandas>=2.0
+opencv-python>=4.9
+pillow>=10.0
+
+# Quality metrics
+scikit-image>=0.22
+
+# ML
+scikit-learn>=1.4
+joblib>=1.3
+
+# Optional: better hyperparameter tuning (not required to run the pipeline)
+optuna>=3.5
+
+# Optional: adds AVIF image support to Pillow (falls back to WebP if absent)
+pillow-avif-plugin>=1.4
+
+# Demo UI
+streamlit>=1.30
+
+# Testing
+pytest>=8.0
+
+# Note: FFmpeg is a system dependency, not a pip package.
+# Install it separately (see README "Setup" section), ideally a build with
+# --enable-libvmaf so video quality reports include VMAF scores.
