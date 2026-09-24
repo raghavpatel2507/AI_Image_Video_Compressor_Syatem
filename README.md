@@ -253,9 +253,10 @@ Real-world compression results from the AI pipeline. Each pair shows the **Origi
 
 | 🔵 Original Video | 🟢 AI-Compressed Video |
 |:---:|:---:|
-| [▶ Click to Watch — Original Video]([outputs/ex.mp4](https://drive.google.com/file/d/1phyabcHTg4MG_lMOs-qcjteiHEkth8i1/view?usp=drive_link)) | [▶ Click to Watch — AI-Compressed Video]([outputs/ai_compressed_ex.mp4](https://drive.google.com/file/d/1rirNjvNv9zFsW4EnATLjeC1lcIPB0E09/view?usp=drive_link)) |
+| [▶️ Watch Original Video](https://drive.google.com/file/d/1phyabcHTg4MG_lMOs-qcjteiHEkth8i1/view?usp=drive_link) | [▶️ Watch AI-Compressed Video](https://drive.google.com/file/d/1rirNjvNv9zFsW4EnATLjeC1lcIPB0E09/view?usp=drive_link) |
 | 📁 `ex.mp4` | 📁 `ai_compressed_ex.mp4` |
-| 📦 **Size: 53.18 MB** | 📦 **Size: 5.46 MB** ✅ *~89.7% smaller* |
+| 📦 **53.18 MB** | 📦 **5.46 MB** |
+| — | 📉 **89.7% smaller** |
 
 > 💡 **Tip — How to view this rendered:**
 > - **VS Code**: Press `Ctrl + Shift + V` to open the Markdown Preview panel.
