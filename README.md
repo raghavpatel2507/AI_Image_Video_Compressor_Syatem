@@ -317,7 +317,7 @@ Real-world compression results from the AI pipeline. Each pair shows the **Origi
 
 | 🔵 Original Image | 🟢 AI-Compressed Image |
 |:---:|:---:|
-| ![Original Image](test_outputs/example.jpg) | ![AI Compressed Image](Test_outputs/ai_compressed_example.webp) |
+| ![Original Image](Test_outputs/example.) | ![AI Compressed Image](Test_outputs/ai_compressed_example.webp) |
 | 📁 `example.jpg` | 📁 `ai_compressed_example.webp` |
 | 📦 **Size: 1.21 MB** | 📦 **Size: 0.56 MB** ✅ *~53.6% smaller* |
 
