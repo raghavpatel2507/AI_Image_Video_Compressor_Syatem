@@ -312,8 +312,7 @@ python -c "import pandas as pd; from src.ml_predictor import train_video_model; 
 
 Real-world compression results from the AI pipeline. Each pair shows the **Original** vs the **AI-Compressed** output, with file sizes displayed below.
 
----
-
+```
 ### 📷 Image Comparison
 
 | 🔵 Original Image | 🟢 AI-Compressed Image |
