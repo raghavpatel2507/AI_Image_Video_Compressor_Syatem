@@ -231,6 +231,32 @@ python -m src.generate_training_data --videos /path/to/your/video_folder --out-d
 # Step 2: Train and save Video ML Model
 python -c "import pandas as pd; from src.ml_predictor import train_video_model; df=pd.read_csv('data/video_training_data.csv'); train_video_model(df); print('Video ML Model Trained Successfully!')"
 
+---
 
+## 🖼️ Testing Samples — Side-by-Side Comparison
 
+Real-world compression results from the AI pipeline. Each pair shows the **Original** vs the **AI-Compressed** output, with file sizes displayed below.
 
+---
+
+### 📷 Image Comparison
+
+| 🔵 Original Image | 🟢 AI-Compressed Image |
+|:---:|:---:|
+| ![Original Image](outputs/example.jpg) | ![AI Compressed Image](outputs/ai_compressed_example.webp) |
+| 📁 `example.jpg` | 📁 `ai_compressed_example.webp` |
+| 📦 **Size: 1.21 MB** | 📦 **Size: 0.56 MB** ✅ *~53.6% smaller* |
+
+---
+
+### 🎬 Video Comparison
+
+| 🔵 Original Video | 🟢 AI-Compressed Video |
+|:---:|:---:|
+| [▶ Click to Watch — Original Video](outputs/ex.mp4) | [▶ Click to Watch — AI-Compressed Video](outputs/ai_compressed_ex.mp4) |
+| 📁 `ex.mp4` | 📁 `ai_compressed_ex.mp4` |
+| 📦 **Size: 53.18 MB** | 📦 **Size: 5.46 MB** ✅ *~89.7% smaller* |
+
+> 💡 **Tip — How to view this rendered:**
+> - **VS Code**: Press `Ctrl + Shift + V` to open the Markdown Preview panel.
+> - **GitHub**: Push to a repository — GitHub renders all Markdown images and tables automatically.
