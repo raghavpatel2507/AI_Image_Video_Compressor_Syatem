@@ -6,6 +6,85 @@ It preserves high visual quality while maximizing file size reduction, includes 
 
 ---
 
+## 🔬 Approach & Methodology
+
+This project does **not** use a single fixed compression setting for all files. Instead, it follows a **data-driven, content-adaptive AI approach** — analyzing each file's unique visual content before deciding how to compress it.
+
+### 🧩 Core Idea
+> Traditional compressors apply the same quality level (e.g., quality=75 or CRF=23) to every file regardless of its content. Our system **predicts the best compression parameter per file** using Machine Learning, preserving quality while saving maximum space.
+
+---
+
+### 🤖 Machine Learning Approach
+
+| | Images | Videos |
+|:---|:---|:---|
+| **Algorithm** | `RandomForestRegressor` | `RandomForestRegressor` |
+| **Predicts** | Optimal WebP quality (45–95) | Optimal H.264 CRF (18–34) |
+| **Trained On** | **800 high-res images** (DIV2K Dataset) | **18 HD/1080p videos** (Pexels.com) |
+| **Input Features** | Resolution (MP), Entropy, Edge Density, Color Variance, Laplacian Variance | Resolution (MP), FPS, Duration, Motion Magnitude, Edge Density, Entropy |
+| **Target Label** | Minimum quality achieving SSIM ≥ 0.95 | Maximum CRF maintaining SSIM ≥ 0.95 |
+| **Model File** | `models/image_quality_model.joblib` | `models/video_quality_model.joblib` |
+
+---
+
+### 📊 Training Data Collection — How We Generated Labels
+
+Rather than manually labeling data, we used **automated parameter sweeping**:
+
+#### 📷 Image Training (800 Images — DIV2K Dataset)
+1. Loaded 800 uncompressed 2K images from the **DIV2K `DIV2K_train_HR`** benchmark dataset.
+2. For each image, extracted 5 visual features using **OpenCV + NumPy** (entropy, edge density, color variance, sharpness, resolution).
+3. Swept WebP quality values `[30, 40, 50, 60, 70, 80, 90]` per image.
+4. Computed **SSIM** (via scikit-image) for each quality level against the original.
+5. Labeled each image with the **minimum quality that achieved SSIM ≥ 0.95** → saved to `data/image_training_data.csv` (800 rows × 10 columns).
+
+#### 🎬 Video Training (18 Videos — Pexels.com)
+1. Downloaded **18 diverse HD videos** from [Pexels.com](https://www.pexels.com/video/) covering 3 motion categories:
+2. For each video, extracted 6 features: average frame entropy, edge density, optical flow motion magnitude (Farneback algorithm), resolution, FPS, and duration.
+3. Swept H.264 CRF values `[18, 22, 26, 30, 34, 38, 42]` per video using FFmpeg.
+4. Computed frame-averaged **SSIM** for each CRF level.
+5. Labeled each video with the **maximum CRF that maintained SSIM ≥ 0.95** → saved to `data/video_training_data.csv` (18 rows × 11 columns).
+
+---
+
+### 🔁 Inference Pipeline — Per-File Compression Flow
+
+```
+Input File (Image / Video)
+        │
+        ▼
+  Feature Extraction          ← OpenCV, NumPy, PIL (entropy, edges, motion, sharpness)
+        │
+        ▼
+  ML Model Prediction         ← RandomForestRegressor predicts Quality / CRF
+  (Fallback: Heuristic Rule)  ← Used if model not available
+        │
+        ▼
+  Compression Engine          ← Pillow (WebP/JPEG) or FFmpeg (H.264/AAC)
+        │
+        ▼
+  Quality Evaluation          ← SSIM + PSNR (scikit-image) + VMAF (FFmpeg libvmaf)
+        │
+   SSIM ≥ 0.95?
+    ├── YES ✅ → Final Output + Download
+    └── NO  ❌ → Auto-Adjust (raise quality / lower CRF) → Re-compress (max 3 retries)
+```
+
+---
+
+### ⚖️ Why This Beats Traditional Compression
+
+| Metric | Traditional (Fixed Params) | Our AI Approach |
+|:---|:---:|:---:|
+| Compression parameter | Same for all files | **Per-file, content-adaptive** |
+| Quality guarantee | ❌ None | ✅ SSIM ≥ 0.95 enforced |
+| Handles diverse content | ❌ Poor | ✅ Trained on 800 images + 18 videos |
+| Auto-corrects bad output | ❌ No | ✅ 3-iteration adjustment loop |
+| Perceptual quality metric | ❌ No | ✅ SSIM, PSNR, VMAF |
+
+---
+
 ## 🧠 Training Datasets & Artifacts Used
 
 The machine learning models in this project were trained on real-world diverse media datasets through automated feature extraction and parameter sweeping:
@@ -30,11 +109,10 @@ ai_compression_system/
 ├── README.md                      # Complete project documentation & setup guide
 ├── SETUP_PLAN.md                  # Deployment plan for new systems
 ├── requirements.txt               # Required Python dependencies
-├── app.py                         # Interactive Streamlit Web Application UI
-├── run_demo.py                    # Automated CLI benchmark runner
-├── main.py                        # System entry point
 ├── pyproject.toml                 # Project metadata configuration
+├── app.py                         # Interactive Streamlit Web Application UI
 ├── src/                           # Core source code package
+│   ├── __init__.py                # Package initializer
 │   ├── image_features.py          # OpenCV image entropy, sharpness & edge density extraction
 │   ├── video_features.py          # OpenCV video optical flow & motion features extraction
 │   ├── image_compressor.py        # Pillow WebP / JPEG image compression engine
@@ -45,10 +123,7 @@ ai_compression_system/
 │   ├── pipeline.py                # AI-assisted adaptive compression & auto-adjustment loop
 │   ├── baseline.py                # Traditional fixed-parameter compression baseline
 │   └── report.py                  # AI vs Baseline comparison report builder
-├── sample_data/                   # Demo sample media files
-├── tested_Images_Videos/          # Tested original and compressed media samples
-├── tests/                         # Pytest automated test suite
-│   └── test_pipeline.py
+├── Test_outputs/                  # Testing sample outputs (original & AI-compressed)
 ├── data/                          # Labeled training dataset CSV files
 └── models/                        # Saved Machine Learning model binaries (.joblib)
 ```
@@ -231,7 +306,7 @@ python -m src.generate_training_data --videos /path/to/your/video_folder --out-d
 # Step 2: Train and save Video ML Model
 python -c "import pandas as pd; from src.ml_predictor import train_video_model; df=pd.read_csv('data/video_training_data.csv'); train_video_model(df); print('Video ML Model Trained Successfully!')"
 
-```
+---
 
 ## 🖼️ Testing Samples — Side-by-Side Comparison
 
@@ -243,14 +318,13 @@ Real-world compression results from the AI pipeline. Each pair shows the **Origi
 
 | 🔵 Original Image | 🟢 AI-Compressed Image |
 |:---:|:---:|
-| ![Original Image](Test_outputs/example.jpg) | ![AI Compressed Image](Test_outputs/ai_compressed_example.webp) |
+| ![Original Image](_test_outputs/example.jpg) | ![AI Compressed Image](Test_outputs/ai_compressed_example.webp) |
 | 📁 `example.jpg` | 📁 `ai_compressed_example.webp` |
-| 📦 **Size: 1.21 MB** | 📦 **Size: 576 KB** ✅ *~53.6% smaller* |
+| 📦 **Size: 1.21 MB** | 📦 **Size: 0.56 MB** ✅ *~53.6% smaller* |
 
 ---
 
 ### 🎬 Video Comparison
-
 | 🔵 Original Video | 🟢 AI-Compressed Video |
 |:---:|:---:|
 | [▶️ Watch Original Video](https://drive.google.com/file/d/1phyabcHTg4MG_lMOs-qcjteiHEkth8i1/view?usp=drive_link) | [▶️ Watch AI-Compressed Video](https://drive.google.com/file/d/1rirNjvNv9zFsW4EnATLjeC1lcIPB0E09/view?usp=drive_link) |
