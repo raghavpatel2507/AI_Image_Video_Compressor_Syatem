@@ -1,17 +1,19 @@
 # ⚡ AI-Based Image & Video Compression System
 
-An intelligent, content-adaptive media compression system that analyzes visual characteristics (texture, sharpness, motion, entropy) using computer vision and Machine Learning (`RandomForestRegressor`) to predict optimal per-file compression parameters. 
+> **Content-adaptive AI compression for images and videos using feature extraction, Machine Learning, automated quality evaluation, and iterative parameter adjustment.**
 
-It preserves high visual quality while maximizing file size reduction, includes an automatic quality evaluation and retry adjustment loop, and benchmarks results against traditional fixed-parameter compression methods.
+An intelligent, content-adaptive media compression system that analyzes visual characteristics (texture, sharpness, motion, and entropy) using Computer Vision and Machine Learning (`RandomForestRegressor`) to predict optimal compression parameters for each file.
+
+It preserves high visual quality while maximizing file-size reduction. The system includes an automatic quality-evaluation and retry-adjustment loop, and benchmarks results against traditional fixed-parameter compression methods.
 
 ---
 
 ## 🔬 Approach & Methodology
 
-This project does **not** use a single fixed compression setting for all files. Instead, it follows a **data-driven, content-adaptive AI approach** — analyzing each file's unique visual content before deciding how to compress it.
+This project does **not** use a single fixed compression setting for all files. Instead, it follows a **data-driven, content-adaptive AI approach** by analyzing each file's unique visual content before deciding how it should be compressed.
 
 ### 🧩 Core Idea
-> Traditional compressors apply the same quality level (e.g., quality=75 or CRF=23) to every file regardless of its content. Our system **predicts the best compression parameter per file** using Machine Learning, preserving quality while saving maximum space.
+> Traditional compressors apply the same quality level (e.g., `quality=75` or `CRF=23`) to every file regardless of its content. Our system **predicts the best compression parameter for each file** using Machine Learning, preserving quality while maximizing space savings.
 
 ---
 
@@ -30,7 +32,7 @@ This project does **not** use a single fixed compression setting for all files. 
 
 ### 📊 Training Data Collection — How We Generated Labels
 
-Rather than manually labeling data, we used **automated parameter sweeping**:
+Rather than manually labeling the data, we use **automated parameter sweeping**:
 
 #### 📷 Image Training (800 Images — DIV2K Dataset)
 1. Loaded 800 uncompressed 2K images from the **DIV2K `DIV2K_train_HR`** benchmark dataset.
@@ -87,7 +89,7 @@ Input File (Image / Video)
 
 ## 🧠 Training Datasets & Artifacts Used
 
-The machine learning models in this project were trained on real-world diverse media datasets through automated feature extraction and parameter sweeping:
+The machine learning models in this project were trained on diverse media datasets using automated feature extraction and parameter sweeping:
 
 ### 1. Image Model Training Dataset
 * **Source Dataset**: **DIV2K Dataset (`DIV2K_train_HR`)** - 800 high-resolution uncompressed 2K images (`0001.png` to `0800.png`) containing landscapes, architecture, human portraits, textures, and text.
@@ -181,7 +183,7 @@ ai_compression_system/
 
 ---
 
-## ⚙️ Functionalities & Codebase Explanation
+## ⚙️ Functionalities & Codebase Overview
 
 ### 1. Feature Extractors (`src/image_features.py` & `src/video_features.py`)
 * `extract_image_features(image_path)`: Computes Shannon entropy (histogram texture), Canny edge density, color channel variance, Laplacian variance (sharpness), and resolution in megapixels.
@@ -207,11 +209,11 @@ ai_compression_system/
 
 ### 1. Structural Similarity Index (SSIM)
 * **Meaning**: SSIM is a perceptual metric that measures structural information loss, luminance, and contrast similarity between the original and compressed media on a scale of `0.0` to `1.0`.
-* **Role in Project**: Serves as our **primary quality target threshold (`SSIM >= 0.95`)**. Unlike simple MSE, SSIM aligns closely with human eye perception. If compression introduces visual distortion, SSIM drops below 0.95, triggering the auto-adjustment system.
+* **Role in Project**: Serves as the **primary quality target threshold (`SSIM >= 0.95`)**. Unlike simple MSE, SSIM aligns closely with human eye perception. If compression introduces visual distortion, SSIM drops below 0.95, triggering the auto-adjustment system.
 
 ### 2. Peak Signal-to-Noise Ratio (PSNR)
 * **Meaning**: PSNR measures the logarithmic ratio (in decibels, dB) between the maximum possible pixel signal power and the noise introduced by compression artifacts.
-* **Role in Project**: Provides objective mathematical pixel-level noise verification. Higher PSNR values (typically `35 dB - 50 dB`) indicate lower noise and higher fidelity.
+* **Role in Project**: Provides objective, mathematical pixel-level noise verification. Higher PSNR values (typically `35 dB - 50 dB`) indicate lower noise and higher fidelity.
 
 ### 3. Video Multi-Method Assessment Fusion (VMAF)
 * **Meaning**: Developed by **Netflix**, VMAF is a Machine Learning-based perceptual quality metric (scaled `0` to `100`) that predicts how human viewers perceive video quality on screens.
@@ -234,7 +236,7 @@ ai_compression_system/
 
 ---
 
-## 🛠️ Step-by-Step Setup & Deployment Plan
+## 🛠️ Step-by-Step Setup and Deployment Plan
 
 ### Step 1: Install System Dependencies (Python & FFmpeg)
 
@@ -330,7 +332,3 @@ Real-world compression results from the AI pipeline. Each pair shows the **Origi
 | 📁 `ex.mp4` | 📁 `ai_compressed_ex.mp4` |
 | 📦 **53.18 MB** | 📦 **5.46 MB** |
 | — | 📉 **89.7% smaller** |
-
-> 💡 **Tip — How to view this rendered:**
-> - **VS Code**: Press `Ctrl + Shift + V` to open the Markdown Preview panel.
-> - **GitHub**: Push to a repository — GitHub renders all Markdown images and tables automatically.
