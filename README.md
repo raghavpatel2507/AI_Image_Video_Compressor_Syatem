@@ -205,37 +205,6 @@ ai_compression_system/
 
 ---
 
-## 🎯 Meaning & Role of Quality Evaluation & Auto-Adjustment Engine
-
-### 1. Structural Similarity Index (SSIM)
-* **Meaning**: SSIM is a perceptual metric that measures structural information loss, luminance, and contrast similarity between the original and compressed media on a scale of `0.0` to `1.0`.
-* **Role in Project**: Serves as the **primary quality target threshold (`SSIM >= 0.95`)**. Unlike simple MSE, SSIM aligns closely with human eye perception. If compression introduces visual distortion, SSIM drops below 0.95, triggering the auto-adjustment system.
-
-### 2. Peak Signal-to-Noise Ratio (PSNR)
-* **Meaning**: PSNR measures the logarithmic ratio (in decibels, dB) between the maximum possible pixel signal power and the noise introduced by compression artifacts.
-* **Role in Project**: Provides objective, mathematical pixel-level noise verification. Higher PSNR values (typically `35 dB - 50 dB`) indicate lower noise and higher fidelity.
-
-### 3. Video Multi-Method Assessment Fusion (VMAF)
-* **Meaning**: Developed by **Netflix**, VMAF is a Machine Learning-based perceptual quality metric (scaled `0` to `100`) that predicts how human viewers perceive video quality on screens.
-* **Role in Project**: Evaluates perceptual video quality. A VMAF score of `90 - 100` signifies excellent quality where human eyes cannot spot compression degradation.
-
-### 4. Automatic Parameter Adjustment Loop (`src/pipeline.py`)
-* **Meaning**: A self-correcting closed-loop optimization algorithm (capped at 3 iterations).
-* **Role in Project**: Guarantees output visual quality. If the ML model's initial prediction yields `SSIM < 0.95`, the loop automatically steps up quality (images) or lowers CRF (videos) and re-compresses until target quality is met.
-
----
-
-### 5. Adaptive Pipeline & Auto-Adjustment (`src/pipeline.py`)
-* `compress_image_adaptive()` / `compress_video_adaptive()`: Runs initial compression based on ML prediction. Evaluates output SSIM against target threshold (`0.95`). If quality is below target, dynamically lowers CRF / raises quality and re-compresses (up to 3 iterations).
-
-### 6. Traditional Baseline Benchmark (`src/baseline.py`)
-* `baseline_compress_image()` / `baseline_compress_video()`: Applies standard fixed compression parameters (Fixed Quality 75 for images, Fixed CRF 23 for videos) to provide a traditional benchmark.
-
-### 7. Interactive Web Application (`app.py`)
-* Built with Streamlit. Features drag-and-drop file upload, session_state caching (prevents re-executing compression on download click), side-by-side media preview, download buttons, MB/KB unit formatting, decision engine status, and comparison metrics cards.
-
----
-
 ## 🛠️ Step-by-Step Setup and Deployment Plan
 
 ### Step 1: Install System Dependencies (Python & FFmpeg)
