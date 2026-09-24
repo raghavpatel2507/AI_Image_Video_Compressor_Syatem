@@ -231,7 +231,7 @@ python -m src.generate_training_data --videos /path/to/your/video_folder --out-d
 # Step 2: Train and save Video ML Model
 python -c "import pandas as pd; from src.ml_predictor import train_video_model; df=pd.read_csv('data/video_training_data.csv'); train_video_model(df); print('Video ML Model Trained Successfully!')"
 
----
+```
 
 ## 🖼️ Testing Samples — Side-by-Side Comparison
 
