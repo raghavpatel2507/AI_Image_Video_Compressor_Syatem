@@ -332,3 +332,7 @@ Real-world compression results from the AI pipeline. Each pair shows the **Origi
 | 📁 `ex.mp4` | 📁 `ai_compressed_ex.mp4` |
 | 📦 **53.18 MB** | 📦 **5.46 MB** |
 | — | 📉 **89.7% smaller** |
+
+### Demo Video
+|:---:|:---:|
+| [▶️ Watch Demo Video]([https://drive.google.com/file/d/1phyabcHTg4MG_lMOs-qcjteiHEkth8i1/view?usp=drive_link](https://drive.google.com/file/d/1TYAPIBi8EHDpfGi38akrcIA2aB3q7mlb/view?usp=sharing)) |
