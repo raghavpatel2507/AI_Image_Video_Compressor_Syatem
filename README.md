@@ -610,17 +610,15 @@ python -m src.generate_training_data \
 
 Train the model:
 
-```bash
-python -c "import pandas as pd; from src.ml_predictor import train_video_model; df=pd.read_csv('data/video_training_data.csv'); train_video_model(df); print('Video ML Model Trained Successfully!')"
-```
 
----
+python -c "import pandas as pd; from src.ml_predictor import train_video_model; df=pd.read_csv('data/video_training_data.csv'); train_video_model(df); print('Video ML Model Trained Successfully!')"
+
 
 ## 🖼️ Testing Samples — Side-by-Side Comparison
 
 Real-world compression results from the AI pipeline. Each pair shows the **Original** vs the **AI-Compressed** output, with file sizes displayed below.
 
-```
+
 ### 📷 Image Comparison
 
 | 🔵 Original Image | 🟢 AI-Compressed Image |
@@ -648,7 +646,7 @@ Real-world compression results from the AI pipeline. Each pair shows the **Origi
 
 The system combines:
 
-```text
+
 Computer Vision
       +
 Feature Extraction
@@ -660,7 +658,7 @@ Content-Adaptive Compression
 Automatic Quality Evaluation
       +
 Parameter Adjustment
-```
+
 
 to build an **AI-assisted image and video compression system**.
 
