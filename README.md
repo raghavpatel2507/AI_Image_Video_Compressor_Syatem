@@ -2,280 +2,617 @@
 
 > **Content-adaptive AI compression for images and videos using feature extraction, Machine Learning, automated quality evaluation, and iterative parameter adjustment.**
 
-An intelligent, content-adaptive media compression system that analyzes visual characteristics (texture, sharpness, motion, and entropy) using Computer Vision and Machine Learning (`RandomForestRegressor`) to predict optimal compression parameters for each file.
+An intelligent media compression system that analyzes the visual characteristics of each image or video and predicts an appropriate compression parameter using Computer Vision and Machine Learning.
 
-It preserves high visual quality while maximizing file-size reduction. The system includes an automatic quality-evaluation and retry-adjustment loop, and benchmarks results against traditional fixed-parameter compression methods.
-
----
-
-## 🔬 Approach & Methodology
-
-This project does **not** use a single fixed compression setting for all files. Instead, it follows a **data-driven, content-adaptive AI approach** by analyzing each file's unique visual content before deciding how it should be compressed.
-
-### 🧩 Core Idea
-> Traditional compressors apply the same quality level (e.g., `quality=75` or `CRF=23`) to every file regardless of its content. Our system **predicts the best compression parameter for each file** using Machine Learning, preserving quality while maximizing space savings.
+The system aims to **reduce file size while maintaining acceptable visual quality**. After compression, the output is automatically evaluated using quality metrics. If the quality does not meet the required threshold, the system adjusts the compression parameter and retries.
 
 ---
 
-### 🤖 Machine Learning Approach
+# 1. 🎯 Problem Statement
 
-| | Images | Videos |
-|:---|:---|:---|
-| **Algorithm** | `RandomForestRegressor` | `RandomForestRegressor` |
-| **Predicts** | Optimal WebP quality (45–95) | Optimal H.264 CRF (18–34) |
-| **Trained On** | **800 high-res images** (DIV2K Dataset) | **18 HD/1080p videos** (Pexels.com) |
-| **Input Features** | Resolution (MP), Entropy, Edge Density, Color Variance, Laplacian Variance | Resolution (MP), FPS, Duration, Motion Magnitude, Edge Density, Entropy |
-| **Target Label** | Minimum quality achieving SSIM ≥ 0.95 | Maximum CRF maintaining SSIM ≥ 0.95 |
-| **Model File** | `models/image_quality_model.joblib` | `models/video_quality_model.joblib` |
+The objective of this task is to build an **AI-assisted image and video compression system** that significantly reduces media file sizes while maintaining acceptable visual quality.
 
----
+The system should:
 
-### 📊 Training Data Collection — How We Generated Labels
+* Compress both **images and videos**.
+* Intelligently select or optimize compression parameters based on the characteristics of the input media.
+* Automatically evaluate the compressed output and adjust compression parameters when required.
+* Compare the **AI-assisted approach** with a traditional fixed-parameter compression approach.
+* Report:
 
-Rather than manually labeling the data, we use **automated parameter sweeping**:
+  * File-size reduction
+  * Quality metrics
+  * Processing time
+  * AI/ML results
 
-#### 📷 Image Training (800 Images — DIV2K Dataset)
-1. Loaded 800 uncompressed 2K images from the **DIV2K `DIV2K_train_HR`** benchmark dataset.
-2. For each image, extracted 5 visual features using **OpenCV + NumPy** (entropy, edge density, color variance, sharpness, resolution).
-3. Swept WebP quality values `[30, 40, 50, 60, 70, 80, 90]` per image.
-4. Computed **SSIM** (via scikit-image) for each quality level against the original.
-5. Labeled each image with the **minimum quality that achieved SSIM ≥ 0.95** → saved to `data/image_training_data.csv` (800 rows × 10 columns).
+### Example Target
 
-#### 🎬 Video Training (18 Videos — Pexels.com)
-1. Downloaded **18 diverse HD videos** from [Pexels.com](https://www.pexels.com/video/) covering 3 motion categories:
-2. For each video, extracted 6 features: average frame entropy, edge density, optical flow motion magnitude (Farneback algorithm), resolution, FPS, and duration.
-3. Swept H.264 CRF values `[18, 22, 26, 30, 34, 38, 42]` per video using FFmpeg.
-4. Computed frame-averaged **SSIM** for each CRF level.
-5. Labeled each video with the **maximum CRF that maintained SSIM ≥ 0.95** → saved to `data/video_training_data.csv` (18 rows × 11 columns).
-
----
-
-### 🔁 Inference Pipeline — Per-File Compression Flow
-
+```text
+Video: 50 MB → ~15 MB
+Image: 10 MB → ~2 MB
 ```
-Input File (Image / Video)
-        │
-        ▼
-  Feature Extraction          ← OpenCV, NumPy, PIL (entropy, edges, motion, sharpness)
-        │
-        ▼
-  ML Model Prediction         ← RandomForestRegressor predicts Quality / CRF
-  (Fallback: Heuristic Rule)  ← Used if model not available
-        │
-        ▼
-  Compression Engine          ← Pillow (WebP/JPEG) or FFmpeg (H.264/AAC)
-        │
-        ▼
-  Quality Evaluation          ← SSIM + PSNR (scikit-image) + VMAF (FFmpeg libvmaf)
-        │
-   SSIM ≥ 0.95?
-    ├── YES ✅ → Final Output + Download
-    └── NO  ❌ → Auto-Adjust (raise quality / lower CRF) → Re-compress (max 3 retries)
+
+The main objective is to achieve **significant file-size reduction while preserving acceptable visual quality through content-aware compression and automatic quality optimization**.
+
+---
+
+# 2. 💡 Proposed Approach
+
+Instead of applying one fixed compression setting to every file, the system uses a **content-adaptive AI approach**.
+
+The system first analyzes the input media, extracts relevant visual characteristics, and uses a Machine Learning model to predict an appropriate compression parameter.
+
+The compressed output is then evaluated automatically. If the quality is below the required threshold, the system adjusts the parameter and performs compression again.
+
+```text
+Input Image / Video
+        ↓
+Feature Extraction
+        ↓
+ML Parameter Prediction
+        ↓
+Compression
+        ↓
+Quality Evaluation
+        ↓
+Quality Target Met?
+     ↙       ↘
+   YES        NO
+    ↓          ↓
+Final Output  Adjust Parameter
+                 ↓
+             Re-compress
+                 ↓
+            Maximum 3 Retries
 ```
 
 ---
 
-### ⚖️ Why This Beats Traditional Compression
+# 3. 🧠 AI/ML Approach
 
-| Metric | Traditional (Fixed Params) | Our AI Approach |
-|:---|:---:|:---:|
-| Compression parameter | Same for all files | **Per-file, content-adaptive** |
-| Quality guarantee | ❌ None | ✅ SSIM ≥ 0.95 enforced |
-| Handles diverse content | ❌ Poor | ✅ Trained on 800 images + 18 videos |
-| Auto-corrects bad output | ❌ No | ✅ 3-iteration adjustment loop |
-| Perceptual quality metric | ❌ No | ✅ SSIM, PSNR, VMAF |
+The system uses `RandomForestRegressor` to predict compression parameters based on the extracted characteristics of the media.
+
+|                      | Images                     | Videos                     |
+| -------------------- | -------------------------- | -------------------------- |
+| **Algorithm**        | `RandomForestRegressor`    | `RandomForestRegressor`    |
+| **Prediction**       | WebP Quality               | H.264 CRF                  |
+| **Prediction Range** | 45–95                      | 18–34                      |
+| **Quality Target**   | SSIM ≥ 0.95                | SSIM ≥ 0.95                |
+| **Fallback**         | Content-adaptive heuristic | Content-adaptive heuristic |
+
+### Image Features
+
+* Resolution
+* Entropy
+* Edge density
+* Color variance
+* Laplacian variance / sharpness
+
+### Video Features
+
+* Resolution
+* FPS
+* Duration
+* Motion magnitude
+* Edge density
+* Entropy
 
 ---
 
-## 🧠 Training Datasets & Artifacts Used
+# 4. 📊 Training Data & Label Generation
 
-The machine learning models in this project were trained on diverse media datasets using automated feature extraction and parameter sweeping:
+Training labels are generated automatically using **compression parameter sweeping** rather than manual labeling.
 
-### 1. Image Model Training Dataset
-* **Source Dataset**: **DIV2K Dataset (`DIV2K_train_HR`)** - 800 high-resolution uncompressed 2K images (`0001.png` to `0800.png`) containing landscapes, architecture, human portraits, textures, and text.
-* **Dataset Download Link**: [ETH Zurich DIV2K Dataset](https://data.vision.ee.ethz.ch/cvl/DIV2K/) | [Kaggle DIV2K Dataset](https://www.kaggle.com/datasets/joe1995/div2k-dataset)
-* **Feature Sweeping**: Swept WebP quality levels (30, 40, 50, 60, 70, 80, 90) to find the minimum quality parameter achieving target SSIM `>= 0.95`.
-* **Generated Dataset Artifact**: `data/image_training_data.csv` (800 labeled rows x 10 features: `resolution_mp`, `entropy`, `edge_density`, `color_variance`, `laplacian_variance`, `optimal_quality`).
-* **Trained ML Artifact**: `models/image_quality_model.joblib` (RandomForestRegressor model).
+## 📷 Image Model
 
-### 2. Video Model Training Dataset
-* **Source Dataset**: **18 High-Resolution HD/1080p Videos Downloaded from [Pexels.com](https://www.pexels.com/video/)** - Downloaded 18 large HD videos covering diverse motion categories (low motion screen recordings, medium motion vlogs/nature, and high motion sports/action scenes).
-* **Feature Sweeping**: Swept H.264 CRF values (18, 22, 26, 30, 34, 38, 42) to find maximum CRF maintaining target SSIM `>= 0.95`.
-* **Generated Dataset Artifact**: `data/video_training_data.csv` (18 labeled rows x 11 features: `resolution_mp`, `fps`, `duration_sec`, `avg_motion_magnitude`, `avg_edge_density`, `avg_entropy`, `optimal_crf`).
----
+### Dataset
 
-## 📁 Project Directory Structure
+* **Dataset:** DIV2K
+* **Subset:** `DIV2K_train_HR`
+* **Images:** 800 high-resolution images
 
+### Label Generation
+
+For each image:
+
+1. Extract visual features using OpenCV and NumPy.
+2. Test multiple WebP quality values:
+
+```text
+30, 40, 50, 60, 70, 80, 90
 ```
+
+3. Calculate SSIM against the original image.
+4. Select the **minimum quality value achieving SSIM ≥ 0.95**.
+5. Store the generated training data in:
+
+```text
+data/image_training_data.csv
+```
+
+### Model
+
+```text
+models/image_quality_model.joblib
+```
+
+---
+
+## 🎬 Video Model
+
+### Dataset
+
+* **Source:** Pexels
+* **Videos:** 18 HD/1080p videos
+* **Content:** Low-, medium-, and high-motion videos
+
+### Label Generation
+
+For each video:
+
+1. Extract video features.
+2. Test different H.264 CRF values:
+
+```text
+18, 22, 26, 30, 34, 38, 42
+```
+
+3. Calculate frame-averaged SSIM.
+4. Select the **maximum CRF maintaining SSIM ≥ 0.95**.
+5. Store the generated training data in:
+
+```text
+data/video_training_data.csv
+```
+
+### Model
+
+```text
+models/video_quality_model.joblib
+```
+
+---
+
+# 5. 🔄 Compression & Quality Optimization Pipeline
+
+The complete pipeline is:
+
+```text
+┌─────────────────────────────┐
+│     Input Image / Video     │
+└──────────────┬──────────────┘
+               ↓
+┌─────────────────────────────┐
+│      Feature Extraction     │
+│   OpenCV / NumPy / PIL       │
+└──────────────┬──────────────┘
+               ↓
+┌─────────────────────────────┐
+│    ML Parameter Prediction  │
+│    RandomForestRegressor     │
+│                             │
+│ Image → WebP Quality        │
+│ Video → H.264 CRF           │
+└──────────────┬──────────────┘
+               ↓
+┌─────────────────────────────┐
+│      Compression Engine     │
+│      Pillow / FFmpeg        │
+└──────────────┬──────────────┘
+               ↓
+┌─────────────────────────────┐
+│      Quality Evaluation     │
+│      SSIM / PSNR / VMAF     │
+└──────────────┬──────────────┘
+               ↓
+        ┌───────────────┐
+        │ SSIM ≥ 0.95 ? │
+        └───────┬───────┘
+             YES│       │NO
+                ↓       ↓
+          Final Output  Adjust Parameter
+                         ↓
+                     Re-compress
+                         ↓
+                   Maximum 3 Retries
+```
+
+---
+
+# 6. 📐 Automatic Quality Evaluation
+
+The system evaluates the compressed output using objective quality metrics.
+
+### SSIM
+
+**Structural Similarity Index**
+
+Used as the primary quality threshold:
+
+```text
+Target: SSIM ≥ 0.95
+```
+
+### PSNR
+
+**Peak Signal-to-Noise Ratio**
+
+Used as an additional objective quality metric.
+
+### VMAF
+
+**Video Multimethod Assessment Fusion**
+
+Used for video perceptual-quality evaluation when FFmpeg supports `libvmaf`.
+
+```text
+VMAF: 0–100
+```
+
+---
+
+# 7. 🔁 Automatic Parameter Adjustment
+
+The ML prediction is followed by an automatic quality check.
+
+If the output satisfies the target:
+
+```text
+SSIM ≥ 0.95
+       ↓
+Accept Output
+```
+
+If the output does not satisfy the target:
+
+```text
+SSIM < 0.95
+       ↓
+Adjust Compression Parameter
+       ↓
+Re-compress
+       ↓
+Evaluate Again
+```
+
+The system performs up to **3 adjustment iterations**.
+
+This allows the system to correct cases where the initial ML prediction does not produce the required quality.
+
+---
+
+# 8. ⚖️ AI-Assisted vs Traditional Compression
+
+The system compares its content-adaptive approach against a traditional fixed-parameter baseline.
+
+| Metric                       | Traditional Fixed Compression | AI-Assisted Compression |
+| ---------------------------- | ----------------------------- | ----------------------- |
+| Compression parameter        | Fixed                         | Predicted per file      |
+| Content awareness            | No                            | Yes                     |
+| Automatic quality evaluation | No                            | Yes                     |
+| Parameter adjustment         | No                            | Yes                     |
+| Quality metrics              | Not enforced                  | SSIM / PSNR / VMAF      |
+| Parameter selection          | Manual / fixed                | ML + fallback heuristic |
+
+The comparison focuses on:
+
+* File-size reduction
+* Visual quality
+* Processing time
+* Compression parameters
+* ML prediction results
+
+---
+
+# 9. 📊 Evaluation & Reporting
+
+For every compression run, the system records relevant results.
+
+### Image / Video Metrics
+
+```text
+Original File Size
+Compressed File Size
+Size Reduction %
+Compression Parameter
+SSIM
+PSNR
+VMAF (Video)
+Processing Time
+Number of Adjustment Iterations
+```
+
+### Example
+
+```text
+Original Size      : 50 MB
+Compressed Size    : 15 MB
+Size Reduction     : 70%
+SSIM               : 0.96
+Processing Time    : X seconds
+Iterations         : 1
+```
+
+The same metrics are used to compare the AI-assisted approach with the traditional fixed-parameter baseline.
+
+---
+
+# 10. 🏗️ System Architecture
+
+```text
+                    ┌──────────────────────┐
+                    │    Image / Video     │
+                    └──────────┬───────────┘
+                               ↓
+                    ┌──────────────────────┐
+                    │   Feature Extractor  │
+                    │ OpenCV / NumPy / PIL │
+                    └──────────┬───────────┘
+                               ↓
+                    ┌──────────────────────┐
+                    │  ML Parameter Model  │
+                    │ RandomForestRegressor│
+                    └──────────┬───────────┘
+                               ↓
+                    ┌──────────────────────┐
+                    │ Compression Engine   │
+                    │ Pillow / FFmpeg      │
+                    └──────────┬───────────┘
+                               ↓
+                    ┌──────────────────────┐
+                    │  Quality Evaluator   │
+                    │ SSIM / PSNR / VMAF   │
+                    └──────────┬───────────┘
+                               ↓
+                    ┌──────────────────────┐
+                    │ Auto-Adjustment Loop │
+                    │ Max 3 iterations     │
+                    └──────────┬───────────┘
+                               ↓
+                    ┌──────────────────────┐
+                    │ Final Output +       │
+                    │ Evaluation Metrics   │
+                    └──────────────────────┘
+```
+
+---
+
+# 11. 📁 Project Structure
+
+```text
 ai_compression_system/
-├── README.md                      # Complete project documentation & setup guide
-├── SETUP_PLAN.md                  # Deployment plan for new systems
-├── requirements.txt               # Required Python dependencies
-├── pyproject.toml                 # Project metadata configuration
-├── app.py                         # Interactive Streamlit Web Application UI
-├── src/                           # Core source code package
-│   ├── __init__.py                # Package initializer
-│   ├── image_features.py          # OpenCV image entropy, sharpness & edge density extraction
-│   ├── video_features.py          # OpenCV video optical flow & motion features extraction
-│   ├── image_compressor.py        # Pillow WebP / JPEG image compression engine
-│   ├── video_compressor.py        # FFmpeg H.264 video compression engine
-│   ├── quality_metrics.py         # SSIM, PSNR & VMAF evaluation engine
-│   ├── ml_predictor.py            # RandomForestRegressor ML training & parameter serving
-│   ├── generate_training_data.py  # Automated parameter sweeping & training CSV generator
-│   ├── pipeline.py                # AI-assisted adaptive compression & auto-adjustment loop
-│   ├── baseline.py                # Traditional fixed-parameter compression baseline
-│   └── report.py                  # AI vs Baseline comparison report builder
-├── Test_outputs/                  # Testing sample outputs (original & AI-compressed)
-├── data/                          # Labeled training dataset CSV files
-└── models/                        # Saved Machine Learning model binaries (.joblib)
+│
+├── README.md
+├── SETUP_PLAN.md
+├── requirements.txt
+├── pyproject.toml
+├── app.py
+│
+├── src/
+│   ├── __init__.py
+│   ├── image_features.py
+│   ├── video_features.py
+│   ├── image_compressor.py
+│   ├── video_compressor.py
+│   ├── quality_metrics.py
+│   ├── ml_predictor.py
+│   ├── generate_training_data.py
+│   ├── pipeline.py
+│   ├── baseline.py
+│   └── report.py
+│
+├── data/
+│   ├── image_training_data.csv
+│   └── video_training_data.csv
+│
+├── models/
+│   ├── image_quality_model.joblib
+│   └── video_quality_model.joblib
+│
+└── Test_outputs/
 ```
 
 ---
 
-## 🏗️ System Architecture
+# 12. 🧰 Technology Stack
 
+| Technology       | Purpose                                |
+| ---------------- | -------------------------------------- |
+| **Python 3.10+** | Core application                       |
+| **OpenCV**       | Computer vision and feature extraction |
+| **NumPy**        | Numerical processing                   |
+| **Pillow**       | Image compression                      |
+| **FFmpeg**       | Video encoding                         |
+| **scikit-learn** | Machine Learning                       |
+| **scikit-image** | SSIM and PSNR                          |
+| **Pandas**       | Training data and reports              |
+| **Joblib**       | ML model persistence                   |
+| **Streamlit**    | Web application                        |
+| **Pytest**       | Automated testing                      |
+
+---
+
+# 13. 🔍 Feature Extraction
+
+### Image
+
+`extract_image_features(image_path)` extracts:
+
+* Shannon entropy
+* Canny edge density
+* Color-channel variance
+* Laplacian variance / sharpness
+* Resolution in megapixels
+
+### Video
+
+`extract_video_features(video_path)` samples frames and calculates:
+
+* Average frame entropy
+* Average edge density
+* Optical-flow motion magnitude
+* Resolution
+* FPS
+* Duration
+
+Video motion is calculated using the **Farneback optical-flow algorithm**.
+
+---
+
+# 14. 🤖 Machine Learning Engine
+
+The ML engine contains separate models for image and video compression.
+
+### Image Model
+
+```text
+RandomForestRegressor
+        ↓
+WebP Quality
+        ↓
+45–95
 ```
-                       ┌─────────────────────────┐
-     Image / Video ───►│    Feature Extractor    │  Extracts entropy, Canny edge density,
-                       │ (OpenCV / NumPy / PIL)  │  Laplacian variance, Farneback optical flow
-                       └────────────┬────────────┘
-                                    │ Extracted Features
-                       ┌────────────▼────────────┐
-                       │  ML Parameter Predictor │  Predicts WebP Quality (45-95) or
-                       │  (RandomForestRegressor)│  H.264 CRF (18-34). Fallback to Heuristic
-                       └────────────┬────────────┘
-                                    │ Predicted Parameters (Quality / CRF)
-                       ┌────────────▼────────────┐
-                       │   Compression Engine    │  Pillow (WebP/JPEG)
-                       │    (FFmpeg / Pillow)    │  FFmpeg (H.264/AAC MP4)
-                       └────────────┬────────────┘
-                                    │ Compressed File
-                       ┌────────────▼────────────┐
-                       │    Quality Evaluator    │  Computes SSIM, PSNR (via scikit-image)
-                       │ (scikit-image / FFmpeg) │  and VMAF (via FFmpeg libvmaf filter)
-                       └────────────┬────────────┘
-                                    │ Quality Score vs Target (SSIM >= 0.95)
-                       ┌────────────▼────────────┐
-                       │  Auto-Adjustment Loop   │  If SSIM < 0.95: adjusts parameter
-                       │      (pipeline.py)      │  and re-compresses (max 3 iterations)
-                       └────────────┬────────────┘
-                                    │
-                     Final Output, Metrics & Download
+
+### Video Model
+
+```text
+RandomForestRegressor
+        ↓
+H.264 CRF
+        ↓
+18–34
 ```
 
----
+### Fallback
 
-## 📦 Role of Dependencies & Libraries Used
-
-| Library / Tool | Primary Role & Purpose in Project |
-| :--- | :--- |
-| **Python 3.10+** | Core programming language for logic, pipelines, and server execution. |
-| **OpenCV (`opencv-python`)** | Image & video processing, frame extraction, Canny edge detection, Laplacian sharpness computation, and Farneback optical flow motion calculation. |
-| **NumPy (`numpy`)** | Efficient array manipulation, histogram calculations, mathematical variance, and vector math. |
-| **Pillow (`pillow`)** | High-performance image conversion and WebP/JPEG saving with custom quality parameters. |
-| **FFmpeg (System Binary)** | Industry-standard backend video encoding (H.264/libx264, AAC audio) and faststart streaming optimization. |
-| **scikit-learn (`scikit-learn`)** | Machine Learning engine (`RandomForestRegressor`, `train_test_split`, `mean_absolute_error`) for parameter prediction. |
-| **scikit-image (`scikit-image`)** | Computes objective image quality metrics: SSIM (Structural Similarity Index) and PSNR (Peak Signal-to-Noise Ratio). |
-| **Pandas (`pandas`)** | Managing tabular training datasets (`.csv`), data manipulation, and comparison report generation. |
-| **Joblib (`joblib`)** | Persisting and loading binary machine learning models (`.joblib`). |
-| **Streamlit (`streamlit`)** | Building the interactive web user interface dashboard with session caching and side-by-side comparison cards. |
-| **Pytest (`pytest`)** | Automated unit testing framework for verifying feature extraction, compression functions, and pipelines. |
+If a trained model is unavailable, the system uses a **content-adaptive heuristic** to determine the compression parameter.
 
 ---
 
-## ⚙️ Functionalities & Codebase Overview
+# 15. 🗜️ Compression Engines
 
-### 1. Feature Extractors (`src/image_features.py` & `src/video_features.py`)
-* `extract_image_features(image_path)`: Computes Shannon entropy (histogram texture), Canny edge density, color channel variance, Laplacian variance (sharpness), and resolution in megapixels.
-* `extract_video_features(video_path)`: Samples frames across a video clip to compute average grayscale entropy, average edge density, and Farneback optical flow magnitude (`avg_motion_magnitude`) between consecutive frames.
+### Images
 
-### 2. Machine Learning Engine (`src/ml_predictor.py`)
-* `train_image_model(df)`: Trains a `RandomForestRegressor` on image features to predict optimal WebP quality (bounded between 45 and 95).
-* `train_video_model(df)`: Trains a `RandomForestRegressor` on video features to predict optimal H.264 CRF (bounded between 18 and 34).
-* `predict_image_quality()` / `predict_video_crf()`: Predicts parameter using loaded model files (`.joblib`). If un-trained, uses a content-adaptive heuristic rule as fallback.
+Pillow is used for:
 
-### 3. Compression Encoders (`src/image_compressor.py` & `src/video_compressor.py`)
-* `compress_image(input_path, output_path, quality, fmt)`: Uses Pillow to encode image into WebP/JPEG with exact quality settings. Includes exception handling for invalid files.
-* `compress_video(input_path, output_path, crf, codec, preset)`: Executes FFmpeg command using H.264 (`libx264`) with `-pix_fmt yuv420p` for universal web browser playback and `-movflags +faststart`.
+* WebP
+* JPEG
 
-### 4. Quality Evaluation Engine (`src/quality_metrics.py`)
-* `evaluate_image_quality()`: Calculates SSIM (Structural Similarity Index) and PSNR.
-* `evaluate_video_quality_ssim_psnr()`: Samples frames across compressed and original video to compute frame-averaged SSIM and PSNR.
-* `evaluate_video_quality_vmaf()`: Uses FFmpeg's `libvmaf` filter if supported on system to calculate Netflix perceptual VMAF score (0-100).
+with configurable quality parameters.
+
+### Videos
+
+FFmpeg is used for:
+
+* H.264 / `libx264`
+* AAC audio
+* `yuv420p`
+* `faststart` optimization
 
 ---
 
-## 🛠️ Step-by-Step Setup and Deployment Plan
+# 16. ⚙️ Setup
 
-### Step 1: Install System Dependencies (Python & FFmpeg)
+## Linux / Ubuntu
 
-#### **Linux (Ubuntu / Debian)**
 ```bash
 sudo apt update
 sudo apt install -y python3 python3-pip python3-venv ffmpeg
 ```
 
-#### **macOS (Homebrew)**
+## macOS
+
 ```bash
 brew install python ffmpeg
 ```
 
-#### **Windows**
-1. Download Python 3.10+ from [python.org](https://www.python.org/downloads/) (Check **"Add Python to PATH"**).
-2. Download FFmpeg static build and add its `bin` directory to System PATH Environment Variables.
+## Windows
+
+1. Install Python 3.10+.
+2. Enable **Add Python to PATH**.
+3. Install FFmpeg.
+4. Add the FFmpeg `bin` directory to the system PATH.
 
 ---
 
-### Step 2: Set Up Virtual Environment & Dependencies
+# 17. 📦 Install Dependencies
 
 ```bash
-# 1. Enter project directory
 cd ai_compression_system
 
-# 2. Create virtual environment
 python3 -m venv .venv
+```
 
-# 3. Activate virtual environment
-# Linux/macOS:
+### Linux / macOS
+
+```bash
 source .venv/bin/activate
-# Windows (cmd):
-# .venv\Scripts\activate
+```
 
-# 4. Install Python dependencies
+### Windows
+
+```bash
+.venv\Scripts\activate
+```
+
+Install dependencies:
+
+```bash
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
 ---
 
-### Step 3: Run the Application
+# 18. 🚀 Run the Application
 
-Launch the Streamlit interactive dashboard:
+Start the Streamlit application:
+
 ```bash
 python -m streamlit run app.py
 ```
-Open `http://localhost:8501` in your browser to test images and videos.
+
+Open:
+
+```text
+http://localhost:8501
+```
 
 ---
 
-## 🧪 Model Retraining & Demo Commands
+# 19. 🔁 Model Retraining
 
-### 1. Retrain Image Model (e.g. using DIV2K dataset)
+## Image Model
+
+Generate training data:
+
 ```bash
-# Step 1: Feature sweeping on custom images folder
-python -m src.generate_training_data --images /path/to/your/image_folder --out-dir data
+python -m src.generate_training_data \
+    --images /path/to/your/image_folder \
+    --out-dir data
+```
 
-# Step 2: Train and save Image ML Model
+Train the model:
+
+```bash
 python -c "import pandas as pd; from src.ml_predictor import train_image_model; df=pd.read_csv('data/image_training_data.csv'); train_image_model(df); print('Image ML Model Trained Successfully!')"
 ```
 
-### 2. Retrain Video Model (e.g. using MP4 video clips)
-```bash
-# Step 1: Feature sweeping on custom videos folder
-python -m src.generate_training_data --videos /path/to/your/video_folder --out-dir data
+## Video Model
 
-# Step 2: Train and save Video ML Model
+Generate training data:
+
+```bash
+python -m src.generate_training_data \
+    --videos /path/to/your/video_folder \
+    --out-dir data
+```
+
+Train the model:
+
+```bash
 python -c "import pandas as pd; from src.ml_predictor import train_video_model; df=pd.read_csv('data/video_training_data.csv'); train_video_model(df); print('Video ML Model Trained Successfully!')"
+```
 
 ---
 
@@ -304,5 +641,29 @@ Real-world compression results from the AI pipeline. Each pair shows the **Origi
 
 ### Demo Video
 
-|:---:|
-| [▶️ Watch Demo Video](https://drive.google.com/file/d/1TYAPIBi8EHDpfGi38akrcIA2aB3q7mlb/view?usp=sharing) |
+[▶️ Watch Demo Video](https://drive.google.com/file/d/1TYAPIBi8EHDpfGi38akrcIA2aB3q7mlb/view?usp=sharing)
+---
+
+# 21. 🎯 Key Takeaway
+
+The system combines:
+
+```text
+Computer Vision
+      +
+Feature Extraction
+      +
+Machine Learning
+      +
+Content-Adaptive Compression
+      +
+Automatic Quality Evaluation
+      +
+Parameter Adjustment
+```
+
+to build an **AI-assisted image and video compression system**.
+
+The system does not rely on a single fixed compression parameter. Instead, it analyzes each media file, predicts an appropriate parameter, evaluates the compressed output, and adjusts the parameter when necessary.
+
+> **Objective: Significantly reduce file size while maintaining acceptable visual quality and providing measurable AI/ML, quality, and performance results.**
